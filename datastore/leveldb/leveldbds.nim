@@ -34,8 +34,8 @@ method delete*(self: LevelDbDatastore, key: Key): Future[?!void] {.async.} =
   except LevelDbException as e:
     return failure("LevelDbDatastore.delete exception: " & e.msg)
 
-
-method delete*(self: LevelDbDatastore, keys: seq[Key]): Future[?!void] {.async.} =
+method delete*(self: LevelDbDatastore, keys: seq[Key]): Future[
+    ?!void] {.async.} =
   try:
     let b = newBatch()
     for key in keys:
@@ -49,13 +49,15 @@ method get*(self: LevelDbDatastore, key: Key): Future[?!seq[byte]] {.async.} =
   try:
     let str = self.db.get($key)
     if not str.isSome:
-      return failure(newException(DatastoreKeyNotFound, "LevelDbDatastore.get: key not found " & $key))
+      return failure(newException(DatastoreKeyNotFound,
+          "LevelDbDatastore.get: key not found " & $key))
     let bytes = str.get().toBytes()
     return success(bytes)
   except LevelDbException as e:
     return failure("LevelDbDatastore.get exception: " & $e.msg)
 
-method put*(self: LevelDbDatastore, key: Key, data: seq[byte]): Future[?!void] {.async.} =
+method put*(self: LevelDbDatastore, key: Key, data: seq[byte]): Future[
+    ?!void] {.async.} =
   try:
     let str = string.fromBytes(data)
     self.db.put($key, str)
@@ -63,7 +65,8 @@ method put*(self: LevelDbDatastore, key: Key, data: seq[byte]): Future[?!void] {
   except LevelDbException as e:
     return failure("LevelDbDatastore.put exception: " & $e.msg)
 
-method put*(self: LevelDbDatastore, batch: seq[BatchEntry]): Future[?!void] {.async.} =
+method put*(self: LevelDbDatastore, batch: seq[BatchEntry]): Future[
+    ?!void] {.async.} =
   try:
     let b = newBatch()
     for entry in batch:
@@ -105,7 +108,8 @@ method query*(
 
   proc next(): Future[?!QueryResponse] {.async.} =
     if iter.finished:
-      return failure(newException(QueryEndedError, "Calling next on a finished query!"))
+      return failure(newException(QueryEndedError,
+          "Calling next on a finished query!"))
 
     try:
       let (keyStr, valueStr) = dbIter.next()
