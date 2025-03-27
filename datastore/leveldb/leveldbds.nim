@@ -40,6 +40,16 @@ method delete*(self: LevelDbDatastore, keys: seq[Key]): Future[?!void] {.async.}
       return failure(err.msg)
   return success()
 
+method batchDelete*(self: LevelDbDatastore, keys: seq[Key]): Future[?!void] {.async.} =
+  try:
+    let b = newBatch()
+    for key in keys:
+      b.delete($key)
+    self.db.write(b)
+    return success()
+  except LevelDbException as e:
+    return failure("LevelDbDatastore.batchDelete exception: " & e.msg)
+
 method get*(self: LevelDbDatastore, key: Key): Future[?!seq[byte]] {.async.} =
   try:
     let str = self.db.get($key)
