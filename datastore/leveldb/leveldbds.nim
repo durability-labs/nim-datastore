@@ -34,13 +34,8 @@ method delete*(self: LevelDbDatastore, key: Key): Future[?!void] {.async.} =
   except LevelDbException as e:
     return failure("LevelDbDatastore.delete exception: " & e.msg)
 
-method delete*(self: LevelDbDatastore, keys: seq[Key]): Future[?!void] {.async.} =
-  for key in keys:
-    if err =? (await self.delete(key)).errorOption:
-      return failure(err.msg)
-  return success()
 
-method batchDelete*(self: LevelDbDatastore, keys: seq[Key]): Future[?!void] {.async.} =
+method delete*(self: LevelDbDatastore, keys: seq[Key]): Future[?!void] {.async.} =
   try:
     let b = newBatch()
     for key in keys:
@@ -48,7 +43,7 @@ method batchDelete*(self: LevelDbDatastore, keys: seq[Key]): Future[?!void] {.as
     self.db.write(b)
     return success()
   except LevelDbException as e:
-    return failure("LevelDbDatastore.batchDelete exception: " & e.msg)
+    return failure("LevelDbDatastore.delete batch exception: " & e.msg)
 
 method get*(self: LevelDbDatastore, key: Key): Future[?!seq[byte]] {.async.} =
   try:

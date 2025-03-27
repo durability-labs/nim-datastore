@@ -25,9 +25,6 @@ method delete*(self: Datastore, key: Key): Future[?!void] {.base, gcsafe, locks:
 method delete*(self: Datastore, keys: seq[Key]): Future[?!void] {.base, gcsafe, locks: "unknown".} =
   raiseAssert("Not implemented!")
 
-method batchDelete*(self: Datastore, keys: seq[Key]): Future[?!void] {.base, gcsafe, locks: "unknown".} =
-  raiseAssert("Not implemented!")
-
 method get*(self: Datastore, key: Key): Future[?!seq[byte]] {.base, gcsafe, locks: "unknown".} =
   raiseAssert("Not implemented!")
 

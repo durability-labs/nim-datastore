@@ -83,9 +83,6 @@ proc delete*(self: TypedDatastore, key: Key): Future[?!void] {.async.} =
 proc delete*(self: TypedDatastore, keys: seq[Key]): Future[?!void] {.async.} =
   await self.ds.delete(keys)
 
-proc batchDelete*(self: TypedDatastore, keys: seq[Key]): Future[?!void] {.async.} =
-  await self.ds.batchDelete(keys)
-
 proc close*(self: TypedDatastore): Future[?!void] {.async.} =
   await self.ds.close()
 
