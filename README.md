@@ -1,3 +1,5 @@
+# WARNING: This repository will be archived soon, it's functionality has been migrated to [nim-kvstore](https://github.com/durability-labs/nim-kvstore)!!!
+
 # nim-datastore
 
 Simple, unified API for multiple data stores.
