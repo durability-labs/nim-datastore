@@ -134,3 +134,51 @@ suite "LevelDB Query: keys should disregard trailing wildcards":
 
       res[2].key.get == key3
       res[2].data == val3
+
+  test "should dispose automatically of iterators when finished":
+    let
+      q = Query.init(Key.init("/a/b/c").tryGet)
+      iter = (await ds.query(q)).tryGet
+
+    let val = (await iter.next()).tryGet()
+    check val.key.get == key3
+    check val.data == val3
+
+    check iter.finished == false
+    check iter.disposed == false
+
+    let val2 = (await iter.next()).tryGet()
+    check val2.key == Key.none
+    check val2.data == EmptyBytes
+
+    check iter.finished == true
+    check iter.disposed == true
+
+  test "should dispose automatically of iterators when datastore is closed":
+    let
+      q1 = Query.init(Key.init("/a/b/c").tryGet)
+      q2 = Query.init(Key.init("/a/b").tryGet)
+      i1 = (await ds.query(q1)).tryGet
+      i2 = (await ds.query(q2)).tryGet
+
+    check i1.disposed == false
+    check i2.disposed == false
+
+    (await ds.close()).tryGet
+
+    check i1.disposed == true
+    check i2.disposed == true
+
+  test "should have idempotent QueryIterator.dispose":
+    let q = Query.init(Key.init("/a/b/c").tryGet)
+    let iter = (await ds.query(q)).tryGet
+    iter.dispose()
+    iter.dispose()
+    check iter.disposed == true
+
+  test "should stop tracking iterator objects once those are disposed":
+    let q = Query.init(Key.init("/a/b/c").tryGet)
+    let iter = (await ds.query(q)).tryGet
+    check ds.openIteratorCount == 1
+    iter.dispose()
+    check ds.openIteratorCount == 0

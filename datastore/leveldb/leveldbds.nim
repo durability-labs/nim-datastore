@@ -5,6 +5,9 @@ import std/tables
 import std/os
 import std/strformat
 import std/strutils
+import std/sets
+import std/hashes
+import std/sequtils
 
 import pkg/leveldbstatic
 import pkg/chronos
@@ -19,6 +22,10 @@ type
   LevelDbDatastore* = ref object of Datastore
     db: LevelDb
     locks: TableRef[Key, AsyncLock]
+    openIterators: HashSet[QueryIter]
+
+proc hash(iter: QueryIter): Hash =
+  hash(addr iter[])
 
 method has*(self: LevelDbDatastore, key: Key): Future[?!bool] {.async: (raises: [CancelledError]).} =
   try:
@@ -70,6 +77,8 @@ method put*(self: LevelDbDatastore, batch: seq[BatchEntry]): Future[?!void] {.as
 
 method close*(self: LevelDbDatastore): Future[?!void] {.async: (raises: [CancelledError]).} =
   try:
+    for iter in toSeq(self.openIterators):
+      iter.dispose()
     self.db.close()
     return success()
   except LevelDbException as e:
@@ -96,6 +105,7 @@ method query*(
       skip = query.offset,
       limit = query.limit
     )
+    iter: QueryIter
 
   proc next: Future[?!QueryResponse] {.async: (raises: [CancelledError]).} =
     if dbIter.finished:
@@ -104,6 +114,7 @@ method query*(
     try:
       let (keyStr, valueStr) = dbIter.next()
       if dbIter.finished:
+        iter.dispose()
         return success (Key.none, EmptyBytes)
       else:
         let key = Key.init(keyStr).expect("LevelDbDatastore.query (next) Failed to create key.")
@@ -116,8 +127,15 @@ method query*(
 
   proc dispose =
     dbIter.dispose()
+    self.openIterators.excl(iter)
 
-  return success QueryIter.new(next, finished, dispose)
+  iter = QueryIter.new(next, finished, dispose)
+  self.openIterators.incl(iter)
+
+  return success iter
+
+proc openIteratorCount*(self: LevelDbDatastore): int =
+  self.openIterators.len
 
 method modifyGet*(
   self: LevelDbDatastore,
@@ -150,7 +168,8 @@ proc new*(
 
     success T(
       db: db,
-      locks: newTable[Key, AsyncLock]()
+      locks: newTable[Key, AsyncLock](),
+      openIterators: initHashSet[QueryIter]()
     )
   except LevelDbException as e:
     return failure("LevelDbDatastore.new exception: " & $e.msg)

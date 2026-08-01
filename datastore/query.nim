@@ -31,6 +31,7 @@ type
     nextImpl: GetNext
     finishedImpl: IterFinished
     disposeImpl: IterDispose
+    disposed: bool
 
 proc finished*(iter: QueryIter): bool =
   iter.finishedImpl()
@@ -39,7 +40,12 @@ proc next*(iter: QueryIter): Future[?!QueryResponse] {.async: (raises: [Cancelle
   await iter.nextImpl()
 
 proc dispose*(iter: QueryIter) =
-  iter.disposeImpl()
+  if not iter.disposed:
+    iter.disposed = true
+    iter.disposeImpl()
+
+proc disposed*(iter: QueryIter): bool =
+  iter.disposed
 
 iterator items*(q: QueryIter): Future[?!QueryResponse] =
   while not q.finished:
